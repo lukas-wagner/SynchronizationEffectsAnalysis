@@ -1,0 +1,31 @@
+{
+  "_comment": "Example parameter sweep. Each run starts from the project config.json, applies its dotted 'overrides' (any config key, so you control not just WHICH scenarios run but also WHAT they do — mode, objective, grid fees, season, penetration, …), and runs the listed scenarios into output/<name>/ (with the resolved config_used.json). Run with: python run.py sweep configs/sweep.example.json. Use 'all' to run every scenario. This example compares charging strategies in a winter week.",
+  "runs": [
+    {
+      "name": "decentral_spot_only",
+      "scenarios": ["optimized"],
+      "overrides": {"grid.season": "winter",
+                    "optimization.mode": "decentralized",
+                    "optimization.grid_fees.mode": "none"}
+    },
+    {
+      "name": "decentral_module3",
+      "scenarios": ["optimized"],
+      "overrides": {"grid.season": "winter",
+                    "optimization.mode": "decentralized",
+                    "optimization.grid_fees.mode": "module3"}
+    },
+    {
+      "name": "central_peakshaving",
+      "scenarios": ["optimized"],
+      "overrides": {"grid.season": "winter",
+                    "optimization.mode": "centralized",
+                    "optimization.objective": "peak_shaving"}
+    },
+    {
+      "name": "uncontrolled_reference",
+      "scenarios": ["fixed_times", "fixed_but_random"],
+      "overrides": {"grid.season": "winter"}
+    }
+  ]
+}

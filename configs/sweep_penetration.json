@@ -1,0 +1,23 @@
+{
+  "_comment": "EV-penetration sweep, decentralized optimisation, winter week (Q1, where Modul 3 is time-variable). Each penetration is run twice: spot price only vs. spot + Modul-3 network charges. Run: python run.py sweep configs/sweep_penetration.json",
+  "runs": [
+    {"name": "pen30_spot",     "scenarios": ["optimized"],
+     "overrides": {"grid.season": "winter", "ev.penetration": 0.3,
+                   "optimization.mode": "decentralized", "optimization.grid_fees.mode": "none"}},
+    {"name": "pen30_module3",  "scenarios": ["optimized"],
+     "overrides": {"grid.season": "winter", "ev.penetration": 0.3,
+                   "optimization.mode": "decentralized", "optimization.grid_fees.mode": "module3"}},
+    {"name": "pen60_spot",     "scenarios": ["optimized"],
+     "overrides": {"grid.season": "winter", "ev.penetration": 0.6,
+                   "optimization.mode": "decentralized", "optimization.grid_fees.mode": "none"}},
+    {"name": "pen60_module3",  "scenarios": ["optimized"],
+     "overrides": {"grid.season": "winter", "ev.penetration": 0.6,
+                   "optimization.mode": "decentralized", "optimization.grid_fees.mode": "module3"}},
+    {"name": "pen90_spot",     "scenarios": ["optimized"],
+     "overrides": {"grid.season": "winter", "ev.penetration": 0.9,
+                   "optimization.mode": "decentralized", "optimization.grid_fees.mode": "none"}},
+    {"name": "pen90_module3",  "scenarios": ["optimized"],
+     "overrides": {"grid.season": "winter", "ev.penetration": 0.9,
+                   "optimization.mode": "decentralized", "optimization.grid_fees.mode": "module3"}}
+  ]
+}

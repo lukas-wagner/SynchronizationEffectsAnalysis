@@ -1,0 +1,109 @@
+{
+  "_comment": "PV-penetration sweep across summer and winter. Each penetration level is run twice — once per season — with all four charging scenarios, so the effect of PV on grid stress can be compared across both the best-case (summer, high PV output) and worst-case (winter, low PV output) solar season. A no-PV baseline (null CF file, SimBench sgens kept) is included for each season as the reference. Run: python run.py sweep configs/sweep_pv.json",
+  "runs": [
+    {
+      "name": "pv0_summer",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "summer",
+        "pv.capacity_factor_json": null
+      }
+    },
+    {
+      "name": "pv30_summer",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "summer",
+        "pv.penetration": 0.3,
+        "pv.capacity_factor_json": "input/pv_capacity_factors.json"
+      }
+    },
+    {
+      "name": "pv60_summer",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "summer",
+        "pv.penetration": 0.6,
+        "pv.capacity_factor_json": "input/pv_capacity_factors.json"
+      }
+    },
+    {
+      "name": "pv0_autumn",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "autumn",
+        "pv.capacity_factor_json": null
+      }
+    },
+    {
+      "name": "pv30_autumn",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "autumn",
+        "pv.penetration": 0.3,
+        "pv.capacity_factor_json": "input/pv_capacity_factors.json"
+      }
+    },
+    {
+      "name": "pv60_autumn",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "autumn",
+        "pv.penetration": 0.6,
+        "pv.capacity_factor_json": "input/pv_capacity_factors.json"
+      }
+    },
+    {
+      "name": "pv0_winter",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "winter",
+        "pv.capacity_factor_json": null
+      }
+    },
+    {
+      "name": "pv30_winter",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "winter",
+        "pv.penetration": 0.3,
+        "pv.capacity_factor_json": "input/pv_capacity_factors.json"
+      }
+    },
+    {
+      "name": "pv60_winter",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "winter",
+        "pv.penetration": 0.6,
+        "pv.capacity_factor_json": "input/pv_capacity_factors.json"
+      }
+    },
+    {
+      "name": "pv0_spring",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "spring",
+        "pv.capacity_factor_json": null
+      }
+    },
+    {
+      "name": "pv30_spring",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "spring",
+        "pv.penetration": 0.3,
+        "pv.capacity_factor_json": "input/pv_capacity_factors.json"
+      }
+    },
+    {
+      "name": "pv60_spring",
+      "scenarios": ["all"],
+      "overrides": {
+        "grid.season": "spring",
+        "pv.penetration": 0.6,
+        "pv.capacity_factor_json": "input/pv_capacity_factors.json"
+      }
+    }
+  ]
+}

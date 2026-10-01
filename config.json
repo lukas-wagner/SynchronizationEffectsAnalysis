@@ -1,0 +1,148 @@
+{
+  "_comment": "Project-wide configuration for SyncroEffects. Every script (simulation/* and optimization/*) reads from this file. Override with a path argument (python script.py path/to/config.json) or the SYNCRO_CONFIG environment variable.",
+
+  "grid": {
+    "simbench_code": "1-LV-rural2--0-sw",
+    "season": "autumn",
+    "simulate_days": 7
+  },
+
+  "time": {
+    "_comment": "Temporal resolution. steps_per_day is derived as 24 * steps_per_hour. season_start_day maps each season to a day-of-year (1-365); the simulation snaps it back to the Monday of that week, so with simulate_days = 7 each run is a full Mon-Sun week. SimBench profiles are 15-min, so steps_per_hour should stay 4 unless the data source changes.",
+    "steps_per_hour": 4,
+    "season_start_day": {
+      "winter": 15,
+      "spring": 106,
+      "summer": 197,
+      "autumn": 288
+    }
+  },
+
+  "limits": {
+    "_comment": "EN 50160 voltage band and line/transformer thresholds used for KPIs and plots.",
+    "v_upper_pu": 1.10,
+    "v_lower_pu": 0.90,
+    "line_loading_max_pct": 100.0,
+    "line_loading_alert_pct": 60.0
+  },
+
+  "ev": {
+    "_comment": "Shared EV fleet parameters. n_ev wins if set; else penetration * number of loads. bus_ids pins EVs to specific SimBench buses (null = automatic by penetration + assignment_seed). Defaults from ETFA2026_InterPhaSe.",
+    "penetration": 0.5,
+    "n_ev": null,
+    "bus_ids": null,
+    "assignment_seed": 42,
+
+    "wallbox_kw": 11.0,
+    "capacity_kwh": 60.0,
+    "charging_efficiency": 0.95,
+    "soc_min": 0.10,
+    "soc_max": 1.00,
+    "soc_initial": 0.75,
+    "soc_target": 0.75,
+    "daily_driving_kwh": 11.7,
+    "departure_slot": 28,
+    "return_slot": 68,
+
+    "mobility": {
+      "_comment": "Stochastic presence model used by the optimisation. randomize=true: per EV and day, trips are drawn from the weekday/weekend lists; each trip has a probability and normal-distributed [mean_hour, std] departure_hour and return_hour plus [mean_kwh, std] energy_kwh (drawn from the battery at departure). Multiple list entries = multiple trips per day. randomize=false: one deterministic trip from departure_slot/return_slot/daily_driving_kwh. Reproducible via assignment_seed (+ seed_offset); each EV gets an independent RNG stream.",
+      "randomize": true,
+      "seed_offset": 0,
+      "hour_min": 4.0,
+      "hour_max": 23.5,
+      "weekday": {
+        "trips": [
+          {"probability": 1.0,  "departure_hour": [7.5, 0.8], "return_hour": [17.0, 1.5], "energy_kwh": [9.0, 2.5]},
+          {"probability": 0.25, "departure_hour": [19.0, 1.0], "return_hour": [21.0, 1.0], "energy_kwh": [3.0, 1.5]}
+        ]
+      },
+      "weekend": {
+        "trips": [
+          {"probability": 0.6, "departure_hour": [10.0, 2.0], "return_hour": [15.0, 2.5], "energy_kwh": [6.0, 3.0]}
+        ]
+      }
+    }
+  },
+
+  "scenarios": {
+    "_comment": "Scenario-specific charging-time parameters (15-min slots / hours).",
+    "fixed_times": {
+      "start_hour": 18,
+      "duration_h": 2.0
+    },
+    "fixed_but_random_times": {
+      "duration_h": 2.0,
+      "start_hour_mean": 18.0,
+      "start_hour_std": 1.5,
+      "start_hour_min": 14.0,
+      "start_hour_max": 22.0
+    }
+  },
+
+  "optimization": {
+    "_comment": "mode: 'decentralized' (default) optimises every EV on its own HEMS — each minimises only its own charging cost against the price signal, with no grid knowledge, so self-interested EVs synchronise on cheap hours. 'centralized' solves one coordinated model with the transformer limit. objective applies to the centralized mode only: 'cost' / 'peak_shaving' / 'flatten'. Price signal resolution order: price_csv (CSV with a 'price' column) > price_profile_eur_per_kwh (24 hourly, steps_per_day, or T values in EUR/kWh) > flat grid_buy_price_eur_per_kwh. The default profile is a typical intraday day-ahead shape.",
+    "mode": "decentralized",
+    "objective": "cost",
+    "price_json": "intraday_prices.json",
+    "price_csv": null,
+    "price_profile_eur_per_kwh": [0.10, 0.09, 0.08, 0.08, 0.09, 0.11, 0.16, 0.24, 0.28, 0.22, 0.16, 0.12, 0.09, 0.08, 0.09, 0.12, 0.18, 0.26, 0.34, 0.36, 0.30, 0.22, 0.16, 0.12],
+    "grid_buy_price_eur_per_kwh": 0.30,
+
+    "grid_fees": {
+      "_comment": "Network charges (Netzentgelte) added to the spot price in the cost objective. The intraday spot prices are NET (wholesale) prices, so these grid fees are the NET values too (EUR/kWh) — both consistent and excl. VAT. mode: 'none' (spot price only), 'constant' (constant_eur_per_kwh), or 'module3' (time-variable, three tariff levels per the §14a EnWG Modul-3 model). Values are the net EUR/kWh from the Stadtwerke Norderstedt Preisblatt 2026 (NSP, Entnahme ohne Lastgangmessung; net = Nettopreise, not the 19% VAT Bruttopreise). Module 3 is time-variable only in the configured quarters (Q1 & Q4); all other quarters use the standard tariff all day. high_hours/low_hours are the hours-of-day (24h) for the HT/NT windows; remaining hours use the standard tariff.",
+      "mode": "none",
+      "constant_eur_per_kwh": 0.0409,
+      "module3": {
+        "standard_eur_per_kwh": 0.0409,
+        "high_eur_per_kwh": 0.0535,
+        "low_eur_per_kwh": 0.0150,
+        "high_hours": [18, 19, 20, 21],
+        "low_hours": [0, 1, 2, 3, 4, 5],
+        "time_variable_quarters": [1, 4]
+      }
+    },
+
+    "mip_gap": 0.0,
+    "time_limit_s": 120
+  },
+
+  "pv": {
+    "_comment": "Additional rooftop PV systems added on top of the 8 SimBench systems. penetration: share of the 99 loads that receive a new PV system (0–1). Sizes are drawn from N(size_kw_mean, size_kw_std) clipped to [size_kw_min, size_kw_max] kW, seeded by assignment_seed. capacity_factor_json: path to a JSON file containing a flat list of normalised capacity factors (0–1) at hourly (8760 values) or 15-min (35040 values) annual resolution — e.g. exported from renewables.ninja for Norderstedt (lat 53.67, lon 10.02) and converted to JSON. null = systems are added to the network but output zero until the file is provided. feed_in_tariff_eur_per_kwh: the revenue the household earns by exporting to the grid (EUR/kWh net, excl. VAT) — used as the opportunity cost of PV self-consumption in the HEMS optimisation. 0.0 = self-consumption is free; ~0.082 = typical German EEG 2025 rate for systems ≤10 kW.",
+    "capacity_factor_json": "input/pv_capacity_factors.json",
+    "penetration": 0.4,
+    "size_kw_mean": 10.0,
+    "size_kw_std": 3.0,
+    "size_kw_min": 3.0,
+    "size_kw_max": 20.0,
+    "assignment_seed": 43,
+    "feed_in_tariff_eur_per_kwh": 0.0
+  },
+
+  "hp": {
+    "_comment": "Residential heat pump parameters. penetration: share of the 99 loads that receive a heat pump (0–1); assignment_seed: independent from EV (42) and PV (43) seeds so the three device types are assigned independently. p_max_kw: maximum electrical power. cop: constant coefficient of performance (thermal output / electrical input) — a mean value; real COPs are temperature-dependent but a fixed value keeps the LP linear. buffer_kwh / buffer_min_kwh / buffer_initial_kwh / buffer_target_kwh: thermal buffer (hot-water tank) capacity and SoC bounds in kWh. heat_loss_kw_per_kelvin: building-level heat-loss coefficient — scales the outdoor temperature difference to a thermal demand (kW per K). t_setpoint_celsius: heating threshold (heating-limit) temperature below which space-heating demand accrues in the degree-hour model max(t_set - t_out, 0) * heat_loss; not an indoor room setpoint. temperature_json: path to the quarter-hourly temperature profile JSON built by input/build_temperature.py.",
+    "penetration": 0.3,
+    "assignment_seed": 44,
+    "p_max_kw": 8.0,
+    "cop": 3.5,
+    "buffer_kwh": 10.0,
+    "buffer_min_kwh": 2.0,
+    "buffer_initial_kwh": 5.0,
+    "buffer_target_kwh": 5.0,
+    "heat_loss_kw_per_kelvin": 0.15,
+    "t_setpoint_celsius": 15.0,
+    "temperature_json": "input/temperature_profiles.json"
+  },
+
+  "network_limits": {
+    "_comment": "Constraints for the optimisation. Transformer limit = net.trafo sn_mva * transformer_loading_max_pct. node_connection_limit_kw caps base+EV power per node (null = off).",
+    "use_transformer_limit": true,
+    "transformer_loading_max_pct": 100.0,
+    "node_connection_limit_kw": null
+  },
+
+  "powerflow_check": true,
+
+  "output": {
+    "make_plots": true
+  }
+}

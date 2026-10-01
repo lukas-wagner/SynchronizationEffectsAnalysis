@@ -1,0 +1,118 @@
+{
+  "_comment": "Research sweep definition for SyncroEffects. Run with: python run_sweep.py. Each block defines a sensitivity study — one parameter varies while all others are held constant. run_sweep.py computes the cartesian product of ev × pv × hp × seasons × scenarios per block and deduplicates across blocks. All sensitivity blocks (2–4, 7–9) use the same six strategies for comparability.",
+
+  "_scenarios": {
+    "baseline":     "No EVs/HPs, PV sgens only — pure grid reference",
+    "fixed_times":  "All EVs charge simultaneously at 18:00 — worst-case synchronisation",
+    "fixed_random": "Each EV has its own randomised start time — uncoordinated but spread",
+    "decentral":    "Decentralised HEMS, spot price only — self-interested, no grid awareness",
+    "decentral_m3": "Decentralised HEMS, §14a Modul-3 grid fee added to spot price (Q1/Q4 only)",
+    "central_cost": "Centralised LP, minimise total energy cost with transformer limit",
+    "central_peak": "Centralised LP, minimise peak transformer load",
+    "central_flat": "Centralised LP, minimise load variance (flatten load profile)"
+  },
+
+  "_six_strategies": ["baseline", "fixed_times", "fixed_random",
+                      "decentral", "central_cost", "central_peak"],
+
+  "blocks": {
+
+    "Block1_core": {
+      "_comment": "Core synchronisation comparison: all six strategies, all seasons, reference penetration EV=PV=HP=30%.",
+      "ev":       [0.30],
+      "pv":       [0.30],
+      "hp":       [0.30],
+      "seasons":  ["winter", "spring", "summer", "autumn"],
+      "scenarios":["baseline", "fixed_times", "fixed_random",
+                   "decentral", "central_cost", "central_peak"]
+    },
+
+    "Block2_ev_sweep": {
+      "_comment": "EV penetration sensitivity (PV=HP=0%). All six strategies. Isolates the pure EV synchronisation effect. Winter = worst case (no solar relief). Compare against Block7 (PV+HP=30%) to see the device-interaction effect.",
+      "ev":       [0.00, 0.30, 0.60, 0.90],
+      "pv":       [0.00],
+      "hp":       [0.00],
+      "seasons":  ["winter"],
+      "scenarios":["baseline", "fixed_times", "fixed_random",
+                   "decentral", "central_cost", "central_peak"]
+    },
+
+    "Block3_pv_sweep": {
+      "_comment": "PV penetration sensitivity (EV=30%, HP=0%). All six strategies. Summer vs winter contrast isolates seasonal PV yield differences. Compare against Block8 (HP=30%) to see the HP interaction with PV.",
+      "ev":       [0.30],
+      "pv":       [0.00, 0.30, 0.60],
+      "hp":       [0.00],
+      "seasons":  ["summer", "winter"],
+      "scenarios":["baseline", "fixed_times", "fixed_random",
+                   "decentral", "central_cost", "central_peak"]
+    },
+
+    "Block4_hp_sweep": {
+      "_comment": "HP penetration sensitivity (EV=30%, PV=0%). All six strategies. Winter = highest heating demand; PV=0% so the HP effect is not masked by solar. Compare against Block9 (PV=30%) to see the PV interaction with HP.",
+      "ev":       [0.30],
+      "pv":       [0.00],
+      "hp":       [0.00, 0.30, 0.60],
+      "seasons":  ["winter"],
+      "scenarios":["baseline", "fixed_times", "fixed_random",
+                   "decentral", "central_cost", "central_peak"]
+    },
+
+    "Block5_module3": {
+      "_comment": "§14a EnWG Modul-3 regulatory sensitivity. Compares decentralised HEMS with and without the time-variable grid fee. The fee applies only in Q1 (Jan–Mar) and Q4 (Oct–Dec) per the Norderstedt tariff structure; winter (week 3) falls in Q1, autumn (week 41) falls in Q4. Spring/summer are excluded (Q2/Q3, fee = 0). PV=HP=0% to isolate the EV price-shifting effect.",
+      "ev":       [0.30, 0.60, 0.90],
+      "pv":       [0.00],
+      "hp":       [0.00],
+      "seasons":  ["winter", "autumn"],
+      "scenarios":["decentral", "decentral_m3"]
+    },
+
+    "Block7_ev_sweep_combined": {
+      "_comment": "EV penetration sweep with PV and HP held fixed at 30%. All six strategies. Compare against Block2 (PV=HP=0%) to quantify the HP compounding effect and how PV cushions EV-driven overloads. Winter = worst case.",
+      "ev":       [0.00, 0.30, 0.60, 0.90],
+      "pv":       [0.30],
+      "hp":       [0.30],
+      "seasons":  ["winter"],
+      "scenarios":["baseline", "fixed_times", "fixed_random",
+                   "decentral", "central_cost", "central_peak"]
+    },
+
+    "Block8_pv_sweep_combined": {
+      "_comment": "PV penetration sweep with EV and HP held fixed at 30%. All six strategies. Summer vs winter contrast (high vs low PV yield). Compare against Block3 (HP=0%) to isolate the HP interaction with PV relief.",
+      "ev":       [0.30],
+      "pv":       [0.00, 0.30, 0.60],
+      "hp":       [0.30],
+      "seasons":  ["summer", "winter"],
+      "scenarios":["baseline", "fixed_times", "fixed_random",
+                   "decentral", "central_cost", "central_peak"]
+    },
+
+    "Block9_hp_sweep_combined": {
+      "_comment": "HP penetration sweep with EV and PV held fixed at 30%. All six strategies. Compare against Block4 (PV=0%) to isolate the PV interaction with HP synchronisation.",
+      "ev":       [0.30],
+      "pv":       [0.30],
+      "hp":       [0.00, 0.30, 0.60],
+      "seasons":  ["winter"],
+      "scenarios":["baseline", "fixed_times", "fixed_random",
+                   "decentral", "central_cost", "central_peak"]
+    },
+
+    "Block6_module3_combined": {
+      "_comment": "§14a Modul-3 with combined EV+PV+HP scenario (EV=PV=HP=30%). Needed for Fig. 1 strategy comparison at reference penetration. Fee applies in Q1 (winter) and Q4 (autumn).",
+      "ev":       [0.30],
+      "pv":       [0.30],
+      "hp":       [0.30],
+      "seasons":  ["winter", "autumn"],
+      "scenarios":["decentral_m3"]
+    },
+
+    "Block_module3_hp_sweep": {
+      "_comment": "§14a Modul-3 HP penetration sensitivity (EV=PV=0%). Pure HP scenario — no EVs — to show whether the fee provides relief when synchronisation is HP-driven. Winter (Q1) and autumn (Q4) only (fee-active seasons).",
+      "ev":       [0.00],
+      "pv":       [0.00],
+      "hp":       [0.00, 0.30, 0.60, 0.90],
+      "seasons":  ["winter", "autumn"],
+      "scenarios":["decentral", "decentral_m3"]
+    }
+
+  }
+}
