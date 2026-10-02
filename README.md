@@ -1,4 +1,4 @@
-# SyncronisationEffectsAnalysis
+# SynchronizationEffectsAnalysis
 
 Simulation and optimization code for the paper
 
