@@ -12,3 +12,7 @@ venv/
 # Licensed market data (not redistributable)
 optimization/intraday_prices.json
 *.xlsx
+
+# robustness runs (run_weeks.py, run_het.py)
+/output_weeks/
+/output_het/

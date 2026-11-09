@@ -57,6 +57,15 @@
                    "decentral", "central_cost", "central_peak"]
     },
 
+    "Block4b_hp_sweep_m3": {
+      "_comment": "Module-3 counterpart to Block4 (EV=30%, PV=0%, winter): Decentralized-M3 at HP=30/60% to check that it coincides with Decentralized in the HP sweep figure.",
+      "ev":       [0.30],
+      "pv":       [0.00],
+      "hp":       [0.30, 0.60],
+      "seasons":  ["winter"],
+      "scenarios":["decentral_m3"]
+    },
+
     "Block5_module3": {
       "_comment": "§14a EnWG Modul-3 regulatory sensitivity. Compares decentralised HEMS with and without the time-variable grid fee. The fee applies only in Q1 (Jan–Mar) and Q4 (Oct–Dec) per the Norderstedt tariff structure; winter (week 3) falls in Q1, autumn (week 41) falls in Q4. Spring/summer are excluded (Q2/Q3, fee = 0). PV=HP=0% to isolate the EV price-shifting effect.",
       "ev":       [0.30, 0.60, 0.90],
@@ -112,6 +121,69 @@
       "hp":       [0.00, 0.30, 0.60, 0.90],
       "seasons":  ["winter", "autumn"],
       "scenarios":["decentral", "decentral_m3"]
+    },
+
+    "FixedSOC_Block1_core": {
+      "_comment": "Energy-consistent fixed charging for the combinations of Block1_core. Charge only at home, only back to soc_target, same mobility as the optimised strategies. The legacy fixed_times/fixed_random scenarios (submitted version) are kept.",
+      "ev":       [0.30],
+      "pv":       [0.30],
+      "hp":       [0.30],
+      "seasons":  ["winter", "spring", "summer", "autumn"],
+      "scenarios":["fixedsoc_times", "fixedsoc_random"]
+    },
+
+    "FixedSOC_Block2_ev_sweep": {
+      "_comment": "Energy-consistent fixed charging for the combinations of Block2_ev_sweep. Charge only at home, only back to soc_target, same mobility as the optimised strategies. The legacy fixed_times/fixed_random scenarios (submitted version) are kept.",
+      "ev":       [0.00, 0.30, 0.60, 0.90],
+      "pv":       [0.00],
+      "hp":       [0.00],
+      "seasons":  ["winter"],
+      "scenarios":["fixedsoc_times", "fixedsoc_random"]
+    },
+
+    "FixedSOC_Block3_pv_sweep": {
+      "_comment": "Energy-consistent fixed charging for the combinations of Block3_pv_sweep. Charge only at home, only back to soc_target, same mobility as the optimised strategies. The legacy fixed_times/fixed_random scenarios (submitted version) are kept.",
+      "ev":       [0.30],
+      "pv":       [0.00, 0.30, 0.60],
+      "hp":       [0.00],
+      "seasons":  ["summer", "winter"],
+      "scenarios":["fixedsoc_times", "fixedsoc_random"]
+    },
+
+    "FixedSOC_Block4_hp_sweep": {
+      "_comment": "Energy-consistent fixed charging for the combinations of Block4_hp_sweep. Charge only at home, only back to soc_target, same mobility as the optimised strategies. The legacy fixed_times/fixed_random scenarios (submitted version) are kept.",
+      "ev":       [0.30],
+      "pv":       [0.00],
+      "hp":       [0.00, 0.30, 0.60],
+      "seasons":  ["winter"],
+      "scenarios":["fixedsoc_times", "fixedsoc_random"]
+    },
+
+    "FixedSOC_Block7_ev_sweep_combined": {
+      "_comment": "Energy-consistent fixed charging for the combinations of Block7_ev_sweep_combined. Charge only at home, only back to soc_target, same mobility as the optimised strategies. The legacy fixed_times/fixed_random scenarios (submitted version) are kept.",
+      "ev":       [0.00, 0.30, 0.60, 0.90],
+      "pv":       [0.30],
+      "hp":       [0.30],
+      "seasons":  ["winter"],
+      "scenarios":["fixedsoc_times", "fixedsoc_random"]
+    },
+
+    "FixedSOC_Block8_pv_sweep_combined": {
+      "_comment": "Energy-consistent fixed charging for the combinations of Block8_pv_sweep_combined. Charge only at home, only back to soc_target, same mobility as the optimised strategies. The legacy fixed_times/fixed_random scenarios (submitted version) are kept.",
+      "ev":       [0.30],
+      "pv":       [0.00, 0.30, 0.60],
+      "hp":       [0.30],
+      "seasons":  ["summer", "winter"],
+      "scenarios":["fixedsoc_times", "fixedsoc_random"]
+    },
+
+    "FixedSOC_Block9_hp_sweep_combined": {
+      "_comment": "Energy-consistent fixed charging for the combinations of Block9_hp_sweep_combined. Charge only at home, only back to soc_target, same mobility as the optimised strategies. The legacy fixed_times/fixed_random scenarios (submitted version) are kept.",
+      "ev":       [0.30],
+      "pv":       [0.30],
+      "hp":       [0.00, 0.30, 0.60],
+      "seasons":  ["winter"],
+      "scenarios":["fixedsoc_times", "fixedsoc_random"]
     }
 
   }

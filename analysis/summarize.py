@@ -93,6 +93,10 @@ def _parse_scenario(scenario_name: str, run_dir_name: str) -> dict:
     # ── Scenario type ──
     if name.startswith("baseline"):
         r["scenario_type"] = "baseline"
+    elif "fixedsoc_random" in name:
+        r["scenario_type"] = "fixedsoc_random"
+    elif "fixedsoc_times" in name:
+        r["scenario_type"] = "fixedsoc_times"
     elif "fixed_but_random" in name:
         r["scenario_type"] = "fixed_but_random"
     elif "fixed_times" in name:

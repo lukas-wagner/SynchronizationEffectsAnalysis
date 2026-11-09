@@ -128,6 +128,17 @@
     "buffer_min_kwh": 2.0,
     "buffer_initial_kwh": 5.0,
     "buffer_target_kwh": 5.0,
+    "heterogeneity": {
+      "_comment": "Optional HP heterogeneity sensitivity. enabled=false keeps the homogeneous fleet. Mean-preserving per-HP factors: capacity x N(1, capacity_cv) and storage x U(storage_range) after Fischer et al. 2017 (Energy 118, Tab. 2; capacity N(1.1,0.2) -> CV 0.18, storage U[0.7,1.1] normalised to mean 1), COP x N(1, cop_cv) with cop_cv = CV of SCOP_real of 612 ASHPs (Brudermueller et al. 2025, Nat. Commun. 16:2834, Tab. 2: 0.71/3.72), heating threshold + U(threshold_offset_k) (Fischer U[0,1] K, centred). Normal draws clipped to +/- clip_sigma.",
+      "enabled": false,
+      "seed": 100,
+      "capacity_cv": 0.18,
+      "storage_range": [0.778, 1.222],
+      "cop_cv": 0.19,
+      "threshold_offset_k": [-0.5, 0.5],
+      "clip_sigma": 2.0,
+      "normalize_per_draw": false
+    },
     "heat_loss_kw_per_kelvin": 0.15,
     "t_setpoint_celsius": 15.0,
     "temperature_json": "input/temperature_profiles.json"

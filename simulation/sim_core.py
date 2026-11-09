@@ -19,6 +19,7 @@ Everything is configured through the project config.json (see the main README).
 """
 
 import os
+import sys
 import json
 
 import numpy as np
@@ -257,6 +258,17 @@ def hp_load_uncontrolled(cfg, ctx):
     p_hp_kw = q_heat_kw / cop                               # kW electrical
     hp_loads = select_hp_loads(cfg, ctx)
     load_mw = np.zeros((ctx["T"], ctx["n_loads"]))
+    het = hp.get("heterogeneity", {}) or {}
+    if het.get("enabled", False) and hp_loads:
+        # Same per-HP factors as the optimisation (hp.heterogeneity).
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                        os.pardir, "optimization"))
+        from optimize_charging import hp_unit_factors
+        f = hp_unit_factors(cfg, len(hp_loads))
+        for h, col in enumerate(hp_loads):
+            q_h = np.maximum(t_set + f["thr"][h] - t_outdoor, 0.0) * loss
+            load_mw[:, col] = q_h / (cop * f["cop"][h]) / 1000.0
+        return load_mw
     for col in hp_loads:
         load_mw[:, col] = p_hp_kw / 1000.0
     return load_mw

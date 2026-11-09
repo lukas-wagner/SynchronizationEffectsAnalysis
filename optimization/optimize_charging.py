@@ -34,6 +34,7 @@ import sys
 import json
 import argparse
 import warnings
+from datetime import date
 
 warnings.filterwarnings("ignore")
 
@@ -397,7 +398,12 @@ def build_hp_demand(cfg, grid, hps):
 
     print(f"      HP demand: {q_heat_kwh.sum():.0f} kWh thermal/week per household | "
           f"peak {q_heat_kw.max():.1f} kW thermal")
-    return np.tile(q_heat_kwh, (n_hp, 1))  # (n_hp, T)
+    thr = hp_unit_factors(cfg, n_hp)["thr"]
+    if not thr.any():
+        return np.tile(q_heat_kwh, (n_hp, 1))  # (n_hp, T), homogeneous fleet
+    # Heterogeneous heating thresholds (hp.heterogeneity): one row per HP.
+    return np.stack([np.maximum(t_set + thr[h] - t_outdoor, 0.0) * loss * dt
+                     for h in range(n_hp)])
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -471,9 +477,16 @@ def _prices_from_json(path, grid, opt):
     t_idx = grid["t_idx"]
     out = np.empty(grid["T"])
     n_miss = 0
+    # Optional: take prices from another year, same ISO week and weekday
+    # (keeps the weekday/weekend pattern). None = calendar date as before.
+    price_year = opt.get("price_year")
     for t in range(grid["T"]):
         ts = t_idx[t]
-        arr = pdict.get(ts.strftime("%Y-%m-%d")) or by_md.get(ts.strftime("%m-%d"))
+        key = ts.strftime("%Y-%m-%d")
+        if price_year:
+            iso = ts.isocalendar()
+            key = date.fromisocalendar(int(price_year), iso[1], iso[2]).isoformat()
+        arr = pdict.get(key) or by_md.get(key[5:])
         if arr:
             slot = int((ts.hour * 60 + ts.minute) * len(arr) // 1440)
             out[t] = arr[min(slot, len(arr) - 1)]
@@ -572,6 +585,54 @@ def _hp_params(cfg):
         "buffer_min_kwh":    float(hp.get("buffer_min_kwh", 2.0)),
         "buffer_initial_kwh":float(hp.get("buffer_initial_kwh", 5.0)),
         "buffer_target_kwh": float(hp.get("buffer_target_kwh", 5.0)),
+    }
+
+
+def hp_unit_factors(cfg, n_hp):
+    """Per-HP multiplicative factors for the optional heterogeneity scenario.
+
+    ``hp.heterogeneity.enabled`` false (default) -> all factors 1 / offsets 0,
+    i.e. exactly the homogeneous fleet. Enabled -> mean-preserving spread around
+    the base parameters:
+      capacity  x N(1, capacity_cv)       CV from Fischer et al. 2017, Tab. 2
+      storage   x U(storage_range)        Fischer U[0.7,1.1] normalised to mean 1
+      cop       x N(1, cop_cv)            CV of SCOP_real, Brudermueller et al. 2025
+      threshold + U(threshold_offset_k)   Fischer U[0,1] K, centred
+    Normal draws are clipped to +/- clip_sigma. Seeded, independent of other draws.
+    """
+    het = cfg.get("hp", {}).get("heterogeneity", {}) or {}
+    ones, zeros = np.ones(n_hp), np.zeros(n_hp)
+    if not het.get("enabled", False) or n_hp == 0:
+        return {"cap": ones, "sto": ones, "cop": ones, "thr": zeros}
+    rng = np.random.default_rng(int(het.get("seed", 100)))
+    k = float(het.get("clip_sigma", 2.0))
+
+    def _norm(cv):
+        return np.clip(rng.normal(1.0, cv, n_hp), 1.0 - k * cv, 1.0 + k * cv)
+    cap = _norm(float(het.get("capacity_cv", 0.18)))
+    lo, hi = het.get("storage_range", [0.778, 1.222])
+    sto = rng.uniform(float(lo), float(hi), n_hp)
+    cop = _norm(float(het.get("cop_cv", 0.19)))
+    tlo, thi = het.get("threshold_offset_k", [-0.5, 0.5])
+    thr = rng.uniform(float(tlo), float(thi), n_hp)
+    if het.get("normalize_per_draw", False):
+        # Exactly mean-preserving within this draw: isolates the
+        # spread from shifts of the sample mean.
+        cap, sto, cop = cap / cap.mean(), sto / sto.mean(), cop / cop.mean()
+        thr = thr - thr.mean()
+    return {"cap": cap, "sto": sto, "cop": cop, "thr": thr}
+
+
+def _hp_params_unit(pr_hp, f, h):
+    """HP parameters of unit h after applying its heterogeneity factors."""
+    s = float(f["sto"][h])
+    return {
+        "p_max_kw":           pr_hp["p_max_kw"] * float(f["cap"][h]),
+        "cop":                pr_hp["cop"] * float(f["cop"][h]),
+        "buffer_kwh":         pr_hp["buffer_kwh"] * s,
+        "buffer_min_kwh":     pr_hp["buffer_min_kwh"] * s,
+        "buffer_initial_kwh": pr_hp["buffer_initial_kwh"] * s,
+        "buffer_target_kwh":  pr_hp["buffer_target_kwh"] * s,
     }
 
 
@@ -686,13 +747,15 @@ def _solve_decentralized(cfg, grid, evs, avail, drive, departures, pv_kw, feed_i
     p_hp_sol = np.zeros((n_hp, T))
     soc_hp_sol = np.zeros((n_hp, T))
     if n_hp > 0:
-        pr_hp = _hp_params(cfg)
+        pr_hp_base = _hp_params(cfg)
+        hp_f = hp_unit_factors(cfg, n_hp)
         ev_by_load = {evs[e]["load_index"]: e for e in range(n_ev)}
         n_hp_infeasible = 0
         print(f"[3b/5] Decentralised HP optimisation: {n_hp} independent HPs …")
         for h in range(n_hp):
             m = gp.Model(f"hp_{h}")
             m.Params.OutputFlag = 0
+            pr_hp = _hp_params_unit(pr_hp_base, hp_f, h)
             p = m.addVars(T, lb=0.0, ub=pr_hp["p_max_kw"], name="p")
             soc = m.addVars(T, lb=pr_hp["buffer_min_kwh"],
                             ub=pr_hp["buffer_kwh"], name="soc")
@@ -791,13 +854,20 @@ def _solve_centralized(cfg, grid, evs, avail, drive, departures, pv_kw, feed_in,
     # Heat pump variables
     p_pv_hp = None
     if n_hp > 0:
+        hp_f = hp_unit_factors(cfg, n_hp)
+        pr_units = [_hp_params_unit(pr_hp, hp_f, h) for h in range(n_hp)]
         p_hp = m.addVars(n_hp, T, lb=0.0, ub=pr_hp["p_max_kw"], name="p_hp")
         soc_hp = m.addVars(n_hp, T, lb=pr_hp["buffer_min_kwh"],
                            ub=pr_hp["buffer_kwh"], name="soc_hp")
         for h in range(n_hp):
+            for t in range(T):
+                p_hp[h, t].UB = pr_units[h]["p_max_kw"]
+                soc_hp[h, t].LB = pr_units[h]["buffer_min_kwh"]
+                soc_hp[h, t].UB = pr_units[h]["buffer_kwh"]
+        for h in range(n_hp):
             _add_hp_constraints(m, {t: p_hp[h, t] for t in range(T)},
                                 {t: soc_hp[h, t] for t in range(T)},
-                                T, Q_heat[h], pr_hp, dt)
+                                T, Q_heat[h], pr_units[h], dt)
         hp_total = [gp.quicksum(p_hp[h, t] for h in range(n_hp)) for t in range(T)]
         # HP PV self-consumption: UB=0 for non-PV households (fixed at zero by LP)
         ev_by_load = {ev["load_index"]: e for e, ev in enumerate(evs)}

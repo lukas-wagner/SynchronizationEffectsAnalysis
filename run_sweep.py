@@ -33,7 +33,7 @@ from pathlib import Path
 _REPO      = Path(__file__).resolve().parent
 _BASE_CFG  = _REPO / "config.json"
 _SWEEP_CFG = _REPO / "configs" / "sweep_blocks.json"
-_PYTHON    = _REPO / ".venv" / "Scripts" / "python.exe"
+_PYTHON    = Path(sys.executable)
 
 # ─── Scenario → script + config overrides ─────────────────────────────────────
 _SCENARIOS = {
@@ -47,6 +47,16 @@ _SCENARIOS = {
     },
     "fixed_random": {
         "script": "simulation/fixed_but_random_times.py",
+        "overrides": {},
+    },
+    # Energy-consistent fixed charging: same mobility as the optimised
+    # strategies, charge only at home and only back to soc_target.
+    "fixedsoc_times": {
+        "script": "simulation/fixedsoc_times.py",
+        "overrides": {},
+    },
+    "fixedsoc_random": {
+        "script": "simulation/fixedsoc_random.py",
         "overrides": {},
     },
     "decentral": {
